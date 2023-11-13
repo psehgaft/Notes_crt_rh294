@@ -175,8 +175,9 @@ ansible-playbook --ask-vault-pass vault.yml
 ```
 
 
-=============
-Operación	Ejemplo
+=========
+
+```notas
 ansible_machine == "x86_64"
 max_memory == 512
 min_memory < 128
@@ -189,3 +190,4 @@ min_memory is not defined
 memory_available
 not memory_available
 ansible_distribution in supported_distros
+```
