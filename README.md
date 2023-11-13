@@ -90,9 +90,13 @@ enabled = true
 
   - name: server.example.com in /etc/hosts
       template:
-        path: /etc/ottherhosts
-        line: "{{ ansible_facts.default_ipv4.address }} {{ ansible_facts.fqdn }} {{ ansible_facts.hostname }}"
-        state: present
+        src: ../templates/hosts.j2
+        dest: /etc/ottherhosts
+        # line: "{{ ansible_facts.default_ipv4.address }} {{ ansible_facts.fqdn }} {{ ansible_facts.hostname }}"
+        # state: present
+        owner: root
+        group: root
+        mode: 0644
     vars:
       hostname1: "{{ ansible_facts.fqdn }}"
       ip1: "{{ ansible_facts.default_ipv4.address }}"
@@ -125,6 +129,7 @@ enabled = true
       copy:
         content: "Welcome {{ ansible_facts.default_ipv4.address }} {{ ansible_facts.fqdn }}\n"
         dest: /var/www/html/index.html
+   with_items: "{{ groups['dev'] }}"
    notify:
       - restart apache
 
@@ -214,7 +219,13 @@ ansible-playbook --vault-password-file=vault-pw-file vault.yml
 
 ansible-playbook --ask-vault-pass vault.yml
 ```
+# host template
 
+```hosts
+{% for host in groups['all'] %}
+{{ hostvars[host]['ansible_facts']['default_ipv4']['address'] }} {{ hostvars[host]['ansible_facts']['fqdn'] }} {{ hostvars[host]['ansible_facts']['hostname'] }}
+{% endfor %}
+```
 
 =========
 
