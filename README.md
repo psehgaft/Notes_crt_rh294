@@ -74,10 +74,13 @@ enabled = true
 - name: Example playbook all elements
   hosts: all
   gather_facts: true
+  vars_files:
+    - ./vars/vault.yml
+
   tasks:
 
   - name: server.example.com in /etc/hosts
-      lineinfile:
+      template:
         path: /etc/ottherhosts
         line: "{{ ansible_facts.default_ipv4.address }} {{ ansible_facts.fqdn }} {{ ansible_facts.hostname }}"
         state: present
@@ -85,6 +88,17 @@ enabled = true
       hostname1: "{{ ansible_facts.fqdn }}"
       ip1: "{{ ansible_facts.default_ipv4.address }}"
       host: "{{ ansible_facts.hostname }}"
+
+- name: Users exist and are in the correct groups
+  user:
+    name: "{{ item.name }}"
+    state: present
+    groups: "{{ item.groups }}"
+  loop:
+    - name: jane
+      groups: wheel
+    - name: joe
+      groups: root
 
 - name: Example playbook all elements
   hosts: webservers
@@ -94,13 +108,13 @@ enabled = true
   - name: httpd package is present
       yum:
         name:
-          - httpd
+          - "{{ ansible_facts.ansible_local.custom.general.service }}"
           - php
         state: latest
 
   - name: correct index.html is present
-      template:
-        src: ../templates/index.html.j2
+      copy:
+        content: "Welcome {{ ansible_facts.default_ipv4.address }} {{ ansible_facts.fqdn }}\n"
         dest: /var/www/html/index.html
 
   - name: firewalld enabled and running
@@ -159,3 +173,19 @@ ansible-playbook --vault-password-file=vault-pw-file vault.yml
 
 ansible-playbook --ask-vault-pass vault.yml
 ```
+
+
+=============
+Operación	Ejemplo
+ansible_machine == "x86_64"
+max_memory == 512
+min_memory < 128
+min_memory > 256
+min_memory <= 256
+min_memory >= 512
+min_memory != 512
+min_memory is defined
+min_memory is not defined
+memory_available
+not memory_available
+ansible_distribution in supported_distros
