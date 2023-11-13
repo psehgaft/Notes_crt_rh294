@@ -7,6 +7,7 @@
 ```sh
 sudo yum install ansible
 yum module install python36
+mkdir -p /[path]/ansible/roles
 
 vi /etc/sudoers
 ```
@@ -49,6 +50,7 @@ become = false
 become_ask_pass = false
 become_method = sudo
 become_user = root
+remote_user: root
 ```
 ## Repos
 
@@ -63,9 +65,79 @@ ansible all -m yum_repository -a "name=[name] description='[description]' baseur
   hosts: all
   tasks:
 
-  - name: web server is enabled
+  - name: server.example.com in /etc/hosts
+      lineinfile:
+        path: /etc/ottherhosts
+        line: '192.0.2.42 server.example.com server'
+        state: present
+
+- name: Example playbook all elements
+  hosts: webservers
+  tasks:
+
+  - name: httpd package is present
+      yum:
+        name:
+          - httpd
+          - php
+        state: latest
+
+  - name: correct index.html is present
+      template:
+        src: ../templates/index.html.j2
+        dest: /var/www/html/index.html
+
+  - name: firewalld enabled and running
+      service:
+        name: firewalld
+        enabled: true
+        state: started
+
+  - name: firewalld permits access to httpd service
+      firewalld:
+        service: http
+        permanent: true
+        state: enabled
+        immediate: yes
+
+  - name: httpd is started
       service:
         name: httpd
+        state: started
         enabled: true
 
+- name: Example playbook all elements
+  hosts: proxy
+  tasks:
+
+- name: Example playbook all elements
+  hosts: database
+  tasks:
+
+  - name: httpd package is present
+      yum:
+        name:
+          - mariadb
+        state: latest
+
+  - name: mariadb enabled and running
+      service:
+        name: mariadb
+        enabled: true
+        state: started
+
+```
+
+# Vault
+
+
+```sh
+ansible-vault create vault.yml
+ansible-vault encrypt vault.yml
+ansible-vault decrypt vault.yml
+ansible-vault rekey vault.yml
+
+ansible-playbook --vault-password-file=vault-pw-file vault.yml
+
+ansible-playbook --ask-vault-pass vault.yml
 ```
