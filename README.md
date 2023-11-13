@@ -58,21 +58,37 @@ remote_user: root
 ansible all -m yum_repository -a "name=[name] description='[description]' baseurl=[baseurl] enabled=yes gpgcheck=yes gpgkey=[gpgkey url]"
 ```
 
+## Facts
+
+```/data-facts/custom.fact
+[general]
+package = httpd
+service = httpd
+state = started
+enabled = true
+```
+
 ## Playbook
 
 ```playbook.yml
 - name: Example playbook all elements
   hosts: all
+  gather_facts: true
   tasks:
 
   - name: server.example.com in /etc/hosts
       lineinfile:
         path: /etc/ottherhosts
-        line: '192.0.2.42 server.example.com server'
+        line: "{{ ansible_facts.default_ipv4.address }} {{ ansible_facts.fqdn }} {{ ansible_facts.hostname }}"
         state: present
+    vars:
+      hostname1: "{{ ansible_facts.fqdn }}"
+      ip1: "{{ ansible_facts.default_ipv4.address }}"
+      host: "{{ ansible_facts.hostname }}"
 
 - name: Example playbook all elements
   hosts: webservers
+  gather_facts: true
   tasks:
 
   - name: httpd package is present
@@ -112,6 +128,7 @@ ansible all -m yum_repository -a "name=[name] description='[description]' baseur
 
 - name: Example playbook all elements
   hosts: database
+  gather_facts: true
   tasks:
 
   - name: httpd package is present
@@ -135,6 +152,7 @@ ansible all -m yum_repository -a "name=[name] description='[description]' baseur
 ansible-vault create vault.yml
 ansible-vault encrypt vault.yml
 ansible-vault decrypt vault.yml
+ansible-vault edit vault.yml
 ansible-vault rekey vault.yml
 
 ansible-playbook --vault-password-file=vault-pw-file vault.yml
