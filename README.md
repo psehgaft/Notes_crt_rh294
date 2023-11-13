@@ -8,6 +8,7 @@
 sudo yum install ansible
 yum module install python36
 mkdir -p /[path]/ansible/roles
+ansible-galaxy install -r requirements.yml
 
 vi /etc/sudoers
 ```
@@ -68,6 +69,14 @@ state = started
 enabled = true
 ```
 
+## Roles
+
+```requeriments.yml
+# from a webserver, where the role is packaged in a tar.gz
+- name: http-role-gz
+  src: https://some.webserver.example.com/files/main.tar.gz
+```
+
 ## Playbook
 
 ```playbook.yml
@@ -89,16 +98,16 @@ enabled = true
       ip1: "{{ ansible_facts.default_ipv4.address }}"
       host: "{{ ansible_facts.hostname }}"
 
-- name: Users exist and are in the correct groups
-  user:
-    name: "{{ item.name }}"
-    state: present
-    groups: "{{ item.groups }}"
-  loop:
-    - name: jane
-      groups: wheel
-    - name: joe
-      groups: root
+  - name: Users exist and are in the correct groups
+    user:
+      name: "{{ item.name }}"
+      state: present
+      groups: "{{ item.groups }}"
+    loop:
+      - name: jane
+        groups: wheel
+      - name: joe
+        groups: root
 
 - name: Example playbook all elements
   hosts: webservers
@@ -116,6 +125,8 @@ enabled = true
       copy:
         content: "Welcome {{ ansible_facts.default_ipv4.address }} {{ ansible_facts.fqdn }}\n"
         dest: /var/www/html/index.html
+   notify:
+      - restart apache
 
   - name: firewalld enabled and running
       service:
@@ -136,6 +147,13 @@ enabled = true
         state: started
         enabled: true
 
+  handlers:
+
+  - name: restart apache
+    service:
+      name: httpd
+      state: restarted
+
 - name: Example playbook all elements
   hosts: proxy
   tasks:
@@ -144,6 +162,19 @@ enabled = true
   hosts: database
   gather_facts: true
   tasks:
+    - name: Conditions
+      block:
+        - name: tasks one
+          shell:
+            cmd: ""
+      rescue:
+        - name: revert tasks one
+          shell:
+            cmd: ""
+      always:
+        - name: tasks alwayss
+          shell:
+            cmd: ""
 
   - name: httpd package is present
       yum:
@@ -156,6 +187,16 @@ enabled = true
         name: mariadb
         enabled: true
         state: started
+
+  - name: Create a logical volume of 512m with disks /dev/sda and /dev/sdb
+    community.general.lvol:
+      vg: firefly
+      lv: test
+      size: 1500
+      pvs: /dev/vdb
+    loop: "{{ ansible_mounts }}"
+    when: item.mount == "[volume]" and item.size_available >= 15000
+    ignore_errors: yes
 
 ```
 
