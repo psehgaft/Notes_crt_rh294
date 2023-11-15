@@ -7,8 +7,10 @@
 ```sh
 sudo yum install ansible
 yum module install python36
+yum install rhel-system-roles
 mkdir -p /[path]/ansible/roles
 ansible-galaxy install -r requirements.yml
+ansible-galaxy collection install [community.role]
 
 vi /etc/sudoers
 ```
@@ -226,6 +228,43 @@ ansible-playbook --ask-vault-pass vault.yml
 {{ hostvars[host]['ansible_facts']['default_ipv4']['address'] }} {{ hostvars[host]['ansible_facts']['fqdn'] }} {{ hostvars[host]['ansible_facts']['hostname'] }}
 {% endfor %}
 ```
+
+## Sintax
+
+```play.yml
+- name: Play sintaxis
+  hosts: all
+  pre_tasks:
+    - name:
+  roles:
+    - role1
+  tasks:
+    - name:
+      notify: my handler
+  post_tasks:
+    - name:
+      notify: my handler
+  handlers:
+    - name: 
+```
+
+### Cron
+
+```task.yml
+- name: remove tempuser.
+  at:
+    command: userdel -r tempuser
+    count: 20
+    units: minutes
+    unique: yes
+- cron:
+    name: "Flush Bolt"
+    user: "root"
+    minute: 45
+    hour: 11
+    job: "php ./app/nut cache:clear"
+```
+
 
 =========
 
