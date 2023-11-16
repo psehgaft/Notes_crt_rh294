@@ -1,8 +1,6 @@
 # Notes_crt_rh294
 
-## Scripts
-
-### Install
+## Install
 
 ```sh
 sudo yum install ansible
@@ -74,7 +72,6 @@ enabled = true
 ## Roles
 
 ```requeriments.yml
-# from a webserver, where the role is packaged in a tar.gz
 - name: http-role-gz
   src: https://some.webserver.example.com/files/main.tar.gz
 ```
