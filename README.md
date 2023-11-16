@@ -92,7 +92,6 @@ enabled = true
         src: ../templates/hosts.j2
         dest: /etc/ottherhosts
         # line: "{{ ansible_facts.default_ipv4.address }} {{ ansible_facts.fqdn }} {{ ansible_facts.hostname }}"
-        # state: present
         owner: root
         group: root
         mode: 0644
@@ -112,55 +111,40 @@ enabled = true
       - name: joe
         groups: root
 
-- name: Example playbook all elements
-  hosts: webservers
-  gather_facts: true
-  tasks:
-
-  - name: httpd package is present
-      yum:
-        name:
-          - "{{ ansible_facts.ansible_local.custom.general.service }}"
-          - php
-        state: latest
-
-  - name: correct index.html is present
-      copy:
-        content: "Welcome {{ ansible_facts.default_ipv4.address }} {{ ansible_facts.fqdn }}\n"
-        dest: /var/www/html/index.html
-   with_items: "{{ groups['dev'] }}"
-   notify:
-      - restart apache
-
-  - name: firewalld enabled and running
-      service:
-        name: firewalld
-        enabled: true
-        state: started
-
-  - name: firewalld permits access to httpd service
-      firewalld:
-        service: http
-        permanent: true
-        state: enabled
-        immediate: yes
-
-  - name: httpd is started
-      service:
-        name: httpd
-        state: started
-        enabled: true
+- name: Install required packages
+  yum:
+    name:
+    - httpd
+    - firewalld
+    state: present
+- name: Allow required ports
+  firewalld:
+    permanent: true
+    state: enabled
+    port: "{{ item }}"
+    immediate: true
+  with_items:
+  - 80/tcp
+  - 443/tcp
+- name: Ensure that services are started on boot
+  service:
+    name: "{{ item }}"
+    state: started
+    enabled: true
+  with_items:
+  - httpd
+  - firewalld
+- name: Prepare index page
+  copy:
+    content: "Welcome, you have connected to {{ ansible_facts.fqdn }}\n"
+    dest: /var/www/html/index.html
 
   handlers:
-
   - name: restart apache
     service:
       name: httpd
       state: restarted
 
-- name: Example playbook all elements
-  hosts: proxy
-  tasks:
 
 - name: Example playbook all elements
   hosts: database
@@ -172,25 +156,27 @@ enabled = true
           shell:
             cmd: ""
       rescue:
-        - name: revert tasks one
+        - name: ""
           shell:
             cmd: ""
       always:
-        - name: tasks alwayss
+        - name: ""
           shell:
             cmd: ""
+      hosts: all
 
-  - name: httpd package is present
-      yum:
-        name:
-          - mariadb
-        state: latest
-
-  - name: mariadb enabled and running
-      service:
-        name: mariadb
-        enabled: true
-        state: started
+  pre_tasks:
+    - name: ""
+  roles:
+    - role1
+  tasks:
+    - name: ""
+      notify: ""
+  post_tasks:
+    - name:
+      notify: ""
+  handlers:
+    - name: ""
 
   - name: Create a logical volume of 512m with disks /dev/sda and /dev/sdb
     community.general.lvol:
@@ -205,7 +191,6 @@ enabled = true
 ```
 
 # Vault
-
 
 ```sh
 ansible-vault create vault.yml
@@ -224,25 +209,6 @@ ansible-playbook --ask-vault-pass vault.yml
 {% for host in groups['all'] %}
 {{ hostvars[host]['ansible_facts']['default_ipv4']['address'] }} {{ hostvars[host]['ansible_facts']['fqdn'] }} {{ hostvars[host]['ansible_facts']['hostname'] }}
 {% endfor %}
-```
-
-## Sintax
-
-```play.yml
-- name: Play sintaxis
-  hosts: all
-  pre_tasks:
-    - name:
-  roles:
-    - role1
-  tasks:
-    - name:
-      notify: my handler
-  post_tasks:
-    - name:
-      notify: my handler
-  handlers:
-    - name: 
 ```
 
 ### Cron
