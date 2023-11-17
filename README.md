@@ -73,29 +73,6 @@ ansible all -m yum_repository -a "name=[name] description='[description]' baseur
     - ./vars/vault.yml
 
   tasks:
-
-  - name: server.example.com in /etc/hosts
-      template:
-        src: ../templates/hosts.j2
-        dest: /etc/ottherhosts
-        # {% for host in groups['all'] %}
-        # {{ hostvars[host]['ansible_eth1']['ipv4']['address'] }} {{ hostvars[host]['ansible_hostname'] }} {{ hostvars[host]['ansible_fqdn'] }}
-        # {% endfor %}
-        owner: root
-        group: root
-        mode: 0644
-
-  - name: Users exist and are in the correct groups
-    user:
-      name: "{{ item.name }}"
-      state: present
-      groups: "{{ item.groups }}"
-    loop:
-      - name: jane
-        groups: wheel
-      - name: joe
-        groups: root
-
 - name: Install required packages
   yum:
     name:
