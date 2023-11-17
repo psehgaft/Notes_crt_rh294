@@ -9,14 +9,11 @@ yum install rhel-system-roles
 mkdir -p /[path]/ansible/roles
 ansible-galaxy install -r requirements.yml
 ansible-galaxy collection install [community.role]
-
 vi /etc/sudoers
 ```
 
 ```/etc/sudoers
-
 [user] ALL=(ALL) NOPASSWD:ALL
-
 ```
 
 ## Inventory
@@ -59,16 +56,6 @@ remote_user: root
 ansible all -m yum_repository -a "name=[name] description='[description]' baseurl=[baseurl] enabled=yes gpgcheck=yes gpgkey=[gpgkey url]"
 ```
 
-## Facts
-
-```/data-facts/custom.fact
-[general]
-package = httpd
-service = httpd
-state = started
-enabled = true
-```
-
 ## Roles
 
 ```requeriments.yml
@@ -97,10 +84,6 @@ enabled = true
         owner: root
         group: root
         mode: 0644
-    vars:
-      hostname1: "{{ ansible_facts.fqdn }}"
-      ip1: "{{ ansible_facts.default_ipv4.address }}"
-      host: "{{ ansible_facts.hostname }}"
 
   - name: Users exist and are in the correct groups
     user:
@@ -189,7 +172,6 @@ enabled = true
     loop: "{{ ansible_mounts }}"
     when: item.mount == "[volume]" and item.size_available >= 15000
     ignore_errors: yes
-
 ```
 
 # Vault
@@ -200,9 +182,7 @@ ansible-vault encrypt vault.yml
 ansible-vault decrypt vault.yml
 ansible-vault edit vault.yml
 ansible-vault rekey vault.yml
-
 ansible-playbook --vault-password-file=vault-pw-file vault.yml
-
 ansible-playbook --ask-vault-pass vault.yml
 ```
 # host template
@@ -230,7 +210,6 @@ ansible-playbook --ask-vault-pass vault.yml
     job: "php ./app/nut cache:clear"
 ```
 
-
 =========
 
 ```notas
@@ -247,4 +226,3 @@ memory_available
 not memory_available
 ansible_distribution in supported_distros
 ```
-
