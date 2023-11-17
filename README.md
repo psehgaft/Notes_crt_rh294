@@ -15,7 +15,7 @@ vi /etc/sudoers
 
 ```/etc/sudoers
 
-[user] (ALL) NOPASSWD: ALL
+[user] ALL=(ALL) NOPASSWD:ALL
 
 ```
 
@@ -91,7 +91,9 @@ enabled = true
       template:
         src: ../templates/hosts.j2
         dest: /etc/ottherhosts
-        # line: "{{ ansible_facts.default_ipv4.address }} {{ ansible_facts.fqdn }} {{ ansible_facts.hostname }}"
+        # {% for host in groups['all'] %}
+        # {{ hostvars[host]['ansible_eth1']['ipv4']['address'] }} {{ hostvars[host]['ansible_hostname'] }} {{ hostvars[host]['ansible_fqdn'] }}
+        # {% endfor %}
         owner: root
         group: root
         mode: 0644
