@@ -109,54 +109,24 @@ ansible all -m yum_repository -a "name=[name] description='[description]' baseur
       uid: "{{ item.uid }}"
       groups: ['wheel']
       shell: /usr/bin/bash
-      password: "{{ user_password | password_hash('sha512', 'salt') }}
-   - name: Upload key
-    authorized_key:
-      key: '{{ lookup("file", "/home/automation/.ssh/id_rsa.pub") }}'
-      user: "{{ item.username }}"
-    loop: "{{ users }}"
+      password: "{{ user_password | password_hash('sha512', 'password') }}
+
+
+    - name: Create a logical volume of 512m with disks /dev/sda and /dev/sdb
+      community.general.lvol:
+        vg: firefly
+        lv: test
+        size: 1500
+        pvs: /dev/vdb
+      loop: "{{ ansible_mounts }}"
+      when: item.mount == "[volume]" and item.size_available >= 15000
+      ignore_errors: yes
   
-  - name: Example playbook all elements
-    hosts: database
-    gather_facts: true
-    tasks:
-      - name: Conditions
-        block:
-          - name: tasks one
-            shell:
-              cmd: ""
-        rescue:
-          - name: ""
-            shell:
-              cmd: ""
-        always:
-          - name: ""
-            shell:
-              cmd: ""
-        hosts: all
-
-  pre_tasks:
-    - name: ""
-  roles:
-    - role1
-  tasks:
-    - name: ""
-      notify: ""
-  post_tasks:
-    - name:
-      notify: ""
-  handlers:
-    - name: ""
-
-  - name: Create a logical volume of 512m with disks /dev/sda and /dev/sdb
-    community.general.lvol:
-      vg: firefly
-      lv: test
-      size: 1500
-      pvs: /dev/vdb
-    loop: "{{ ansible_mounts }}"
-    when: item.mount == "[volume]" and item.size_available >= 15000
-    ignore_errors: yes
+    - name: Ensure XFS Filesystem exists on each LV
+        filesystem:
+          dev: "/dev/{{ item.vgroup }}/{{ item.name }}"
+          fstype: xfs
+        loop: "{{ logical_volumes }}"
 ```
 
 # Vault
@@ -200,6 +170,9 @@ ansible-playbook --ask-vault-pass vault.yml
 =========
 
 ```notas
+
+# When
+
 ansible_machine == "x86_64"
 max_memory == 512
 min_memory < 128
@@ -212,4 +185,48 @@ min_memory is not defined
 memory_available
 not memory_available
 ansible_distribution in supported_distros
+
+# Ansible facts
+
+Short host name	                            ansible_facts['hostname']
+Fully qualified domain name	                ansible_facts['fqdn']
+Main IPv4 address (based on routing)	      ansible_facts['default_ipv4']['address']
+List of the names of all network interfaces	ansible_facts['interfaces']
+Size of the /dev/vda1 disk partition	      ansible_facts['devices']['vda']['partitions']['vda1']['size']
+List of DNS servers	                        ansible_facts['dns']['nameservers']
+Version of the currently running kernel	    ansible_facts['kernel']
 ```
+
+```Template.yml
+- name: Example playbook all elements
+    hosts: database
+    gather_facts: true
+    tasks:
+      - name: Conditions
+        block:
+          - name: tasks one
+            shell:
+              cmd: ""
+        rescue:
+          - name: ""
+            shell:
+              cmd: ""
+        always:
+          - name: ""
+            shell:
+              cmd: ""
+        hosts: all
+
+  pre_tasks:
+    - name: ""
+  roles:
+    - role1
+  tasks:
+    - name: ""
+      notify: ""
+  post_tasks:
+    - name:
+      notify: ""
+  handlers:
+    - name: ""
+``` 
