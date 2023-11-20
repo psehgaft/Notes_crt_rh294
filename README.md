@@ -4,11 +4,13 @@
 
 ```sh
 sudo yum install ansible
-yum module install python36
 yum install rhel-system-roles
+
 mkdir -p /[path]/ansible/roles
-ansible-galaxy install -r requirements.yml
-ansible-galaxy collection install [community.role]
+chown -R [user]:[user] /[path]/ansible/roles
+chmod -r 755 chown -R [user]:[user] /[path]/ansible/roles/*
+ansible-galaxy role install -r requirements.yml -p roles
+
 vi /etc/sudoers
 ```
 
@@ -40,7 +42,6 @@ proxy
 ```ansible.cfg
 [defaults]
 inventory = /[dir_path]/inventory
-log_path = /var/log/ansible/execution.log
 roles_path = ~/.ansible/roles:/usr/share/ansible/roles:/etc/ansible/roles:/[dir_path]/roles
 
 [privilege_escalation]
@@ -50,9 +51,10 @@ become_method = sudo
 become_user = root
 remote_user: root
 ```
-## Repos
+## Ad-Hoc Commands
 
 ```sh
+#!/usr/bin/bash
 ansible all -m yum_repository -a "name=[name] description='[description]' baseurl=[baseurl] enabled=yes gpgcheck=yes gpgkey=[gpgkey url]"
 ```
 
@@ -73,59 +75,65 @@ ansible all -m yum_repository -a "name=[name] description='[description]' baseur
     - ./vars/vault.yml
 
   tasks:
-- name: Install required packages
-  yum:
-    name:
+  - name: Install required packages
+    yum:
+      name:
+      - httpd
+      - firewalld
+      state: present
+  - name: Allow required ports
+    firewalld:
+      permanent: true
+      state: enabled
+      port: "{{ item }}"
+      immediate: true
+    with_items:
+    - 80/tcp
+    - 443/tcp
+  - name: Ensure that services are started on boot
+    service:
+      name: "{{ item }}"
+      state: started
+      enabled: true
+    with_items:
     - httpd
     - firewalld
-    state: present
-- name: Allow required ports
-  firewalld:
-    permanent: true
-    state: enabled
-    port: "{{ item }}"
-    immediate: true
-  with_items:
-  - 80/tcp
-  - 443/tcp
-- name: Ensure that services are started on boot
-  service:
-    name: "{{ item }}"
-    state: started
-    enabled: true
-  with_items:
-  - httpd
-  - firewalld
-- name: Prepare index page
-  copy:
-    content: "Welcome, you have connected to {{ ansible_facts.fqdn }}\n"
-    dest: /var/www/html/index.html
-
-  handlers:
-  - name: restart apache
-    service:
-      name: httpd
-      state: restarted
-
-
-- name: Example playbook all elements
-  hosts: database
-  gather_facts: true
-  tasks:
-    - name: Conditions
-      block:
-        - name: tasks one
-          shell:
-            cmd: ""
-      rescue:
-        - name: ""
-          shell:
-            cmd: ""
-      always:
-        - name: ""
-          shell:
-            cmd: ""
-      hosts: all
+  - name: Prepare index page
+    copy:
+      content: "Welcome, you have connected to {{ ansible_facts.fqdn }}\n"
+      dest: /var/www/html/index.html
+  
+  - name: Create users for webservers
+    user:
+      name: "{{ item.username }}"
+      uid: "{{ item.uid }}"
+      groups: ['wheel']
+      shell: /usr/bin/bash
+      password: "{{ user_password | password_hash('sha512', 'salt') }}
+   - name: Upload key
+    authorized_key:
+      key: '{{ lookup("file", "/home/automation/.ssh/id_rsa.pub") }}'
+      user: "{{ item.username }}"
+    loop: "{{ users }}"
+  
+  - name: Example playbook all elements
+    hosts: database
+    gather_facts: true
+    tasks:
+      - name: Conditions
+        block:
+          - name: tasks one
+            shell:
+              cmd: ""
+        rescue:
+          - name: ""
+            shell:
+              cmd: ""
+        always:
+          - name: ""
+            shell:
+              cmd: ""
+        hosts: all
 
   pre_tasks:
     - name: ""
@@ -165,8 +173,10 @@ ansible-playbook --ask-vault-pass vault.yml
 # host template
 
 ```hosts
+127.0.0.1 localhost {{ ansible_hostname }} {{ ansible_fqdn }}
+127.0.1.1 localhost 
 {% for host in groups['all'] %}
-{{ hostvars[host]['ansible_facts']['default_ipv4']['address'] }} {{ hostvars[host]['ansible_facts']['fqdn'] }} {{ hostvars[host]['ansible_facts']['hostname'] }}
+{{ hostvars[host]['ansible_eth1']['ipv4']['address'] }} {{ hostvars[host]['ansible_hostname'] }} {{ hostvars[host]['ansible_fqdn'] }}
 {% endfor %}
 ```
 
